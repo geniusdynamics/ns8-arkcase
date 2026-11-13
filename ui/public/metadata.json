@@ -1,9 +1,13 @@
 {
   "name": "arkcase",
   "description": {
-    "en": "My arkcase module"
+    "en": "ArkCase is an open source case management platform for tracking cases, tasks, documents and workflows.",
+    "it": "ArkCase è una piattaforma open source di case management per gestire pratiche, attività, documenti e flussi di lavoro."
   },
-  "categories": [],
+  "categories": [
+    "collaboration",
+    "office"
+  ],
   "authors": [
     {
       "name": "Genius Dynamics",

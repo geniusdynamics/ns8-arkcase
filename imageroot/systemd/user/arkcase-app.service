@@ -19,7 +19,7 @@ ExecStartPre=/bin/rm -f %t/arkcase-app.pid %t/arkcase-app.ctr-id
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/arkcase-app.pid \
     --cidfile %t/arkcase-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/arkcase.pod-id --replace -d --name  arkcase-app \
-    ${ARKCASECECORE_IMAGE} /sbin/init
+    ${ARKCASE_IMAGE} /sbin/init
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/arkcase-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP arkcase-app
 SyslogIdentifier=%u

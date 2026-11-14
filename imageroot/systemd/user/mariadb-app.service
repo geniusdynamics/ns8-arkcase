@@ -7,32 +7,31 @@
 Description=Podman mariadb-app.service
 BindsTo=arkcase.service
 After=arkcase.service
+Before=arkcase-app.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
 EnvironmentFile=%E/state/environment
-# EnvironmentFile=%E/state/secrets/passwords.secret
 Restart=always
 RestartSec=10
 TimeoutStopSec=70
+TimeoutStartSec=300
 ExecStartPre=/bin/rm -f %t/mariadb-app.pid %t/mariadb-app.ctr-id
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/mariadb-app.pid \
     --cidfile %t/mariadb-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/arkcase.pod-id --replace -d --name mariadb-app \
-    --env-file=%E/state/environment \
+    --env-file=%E/state/passwords.env \
     --volume mysql-data:/var/lib/mysql/:Z \
-    --env MARIADB_ROOT_PASSWORD=Nethesis,1234 \
     --env MARIADB_DATABASE=arkcase \
     --env MARIADB_USER=arkcase \
-    --env MARIADB_PASSWORD=arkcase \
     --env MARIADB_AUTO_UPGRADE=1 \
     ${MARIADB_IMAGE} \
     --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-ExecStartPost=/usr/bin/podman exec  mariadb-app /bin/bash -c 'printf "[client] \npassword=Nethesis,1234" > /root/.my.cnf'
-ExecStartPost=/usr/bin/podman exec mariadb-app /bin/bash -c "while ! mariadb-admin ping -h localhost -P 3306 -u root; do sleep 1; done"
+# Report started only when the server accepts TCP connections: the
+# temporary server of the first start listens on the socket only
+ExecStartPost=/usr/bin/podman exec mariadb-app /bin/bash -c "for i in $$(seq 1 120); do mariadb-admin ping --silent -h 127.0.0.1 -uroot -p\"$$MARIADB_ROOT_PASSWORD\" 2>/dev/null && exit 0; sleep 2; done; exit 1"
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/mariadb-app.ctr-id -t 10
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/mariadb-app.ctr-id
-ExecReload=/usr/bin/podman kill -s HUP mariadb-app
 SyslogIdentifier=%u
 PIDFile=%t/mariadb-app.pid
 Type=forking

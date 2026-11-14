@@ -41,7 +41,8 @@ EOF
 
 ## Network and access
 
-- Reserves 1 TCP port(s) on the node. The web application is published through Traefik on the configured host name.
+- Reserves 1 TCP port on the node, published on port 8080 (Tomcat) of the pod. The web application is published through Traefik on the configured host name, at `/arkcase/`.
+- MariaDB passwords are generated at install time in `state/passwords.env` (mode 0600).
 - Runs rootless.
 - Declares these NS8 authorizations: `traefik@node:routeadm`.
 
@@ -49,14 +50,21 @@ EOF
 
 The following paths are included in the NS8 backup (`imageroot/etc/state-include.conf`):
 
-- `state/arkcase.sql`
-- `volumes/arkcase-app`
+- `state/arkcase.sql`: MariaDB dump written by `bin/module-dump-state`
 
 ## Services
 
 - `arkcase-app.service`
 - `arkcase.service`
 - `mariadb-app.service`
+
+## Known limitations
+
+The module does not run a working ArkCase yet:
+
+- `docker.io/geniusdynamics/arkcase:latest` is a self-built Tomcat image (ArkCase 2021.03.01 WAR plus the config server). It publishes no versioned tag, so it cannot be pinned for Renovate.
+- The `/arkcase` web application fails to deploy inside that image, even on its own: `Error creating bean with name 'configSource' ... RuntimeCryptoException: Failed to convert property value. Reason:Invalid key`. Its configuration also points at PostgreSQL (`acm.url=${POSTGRES_URL}`), ActiveMQ over SSL, LDAP (Samba AD), Solr and Alfresco. The module provides none of these, and its MariaDB is not used.
+- Upstream ArkCase ships only as a Kubernetes Helm stack (`ArkCase/ark_helm_charts`): core `public.ecr.aws/arkcase/core`, Zookeeper, Solr, Samba, Artemis, Alfresco (content, share, search, transform), Pentaho, PostgreSQL or MariaDB, and Kubernetes-only helpers. It does not fit an 8 GB node.
 
 ## Get the configuration
 

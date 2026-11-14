@@ -2,6 +2,7 @@
 Library    SSHLibrary
 
 *** Variables ***
+${HOST}    arkcase.example.org
 ${ADMIN_USER}    admin
 ${ADMIN_PASSWORD}    Nethesis,1234
 ${module_id}    ${EMPTY}
@@ -14,6 +15,13 @@ Login to cluster-admin
     Fill Text    text="Password"    ${ADMIN_PASSWORD}
     Click    button >> text="Log in"
     Wait For Elements State    css=#main-content    visible    timeout=10s
+
+ArkCase answers
+    # ArkCase is the /arkcase web application of Tomcat. 2xx, 3xx, 401 and
+    # 403 mean it answers. 000 (no answer), 404 (no Traefik route, or the
+    # web application did not deploy), 5xx and anything else fail.
+    ${status} =    Execute Command    curl -k -s -o /dev/null -w '\%{http_code}' --resolve ${HOST}:443:127.0.0.1 https://${HOST}/arkcase/
+    Should Match Regexp    ${status}    ^(2..|3..|401|403)$    ArkCase answered HTTP ${status}
 
 *** Test Cases ***
 Check if arkcase is installed correctly
@@ -40,14 +48,19 @@ Take screenshots
     Close Browser
 
 Check if arkcase can be configured
-    ${rc} =    Execute Command    api-cli run module/${module_id}/configure-module --data '{}'
+    ${rc} =    Execute Command    api-cli run module/${module_id}/configure-module --data '{"host":"${HOST}","http2https":true,"lets_encrypt":false}'
     ...    return_rc=True  return_stdout=False
     Should Be Equal As Integers    ${rc}  0
 
-Check if arkcase works as expected
-    ${rc} =    Execute Command    curl -f http://127.0.0.1/arkcase/
-    ...    return_rc=True  return_stdout=False
+Check if arkcase configuration reads back
+    ${output}  ${rc} =    Execute Command    api-cli run module/${module_id}/get-configuration
+    ...    return_rc=True
     Should Be Equal As Integers    ${rc}  0
+    &{config} =    Evaluate    json.loads($output)    modules=json
+    Should Be Equal    ${config.host}    ${HOST}
+
+Check if arkcase works as expected
+    Wait Until Keyword Succeeds    15 min    10 sec    ArkCase answers
 
 Check if arkcase is removed correctly
     ${rc} =    Execute Command    remove-module --no-preserve ${module_id}

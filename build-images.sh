@@ -17,6 +17,10 @@ reponame="arkcase"
 # Node.js 25+ no longer ships Corepack, install it from npm
 # renovate: datasource=npm packageName=corepack
 corepack_version=0.36.0
+# renovate: datasource=docker packageName=docker.io/library/mariadb
+MARIADB_VERSION=13.0.2
+# geniusdynamics/arkcase publishes only the "latest" tag
+ARKCASE_VERSION=latest
 
 # Create a new empty container image
 container=$(buildah from scratch)
@@ -50,7 +54,7 @@ buildah config --entrypoint=/ \
     --label="org.nethserver.tcp-ports-demand=1" \
     --label="org.nethserver.rootfull=0" \
     --label="org.nethserver.min-core=3.0.0" \
-    --label="org.nethserver.images=docker.io/mariadb:13.0.2 docker.io/geniusdynamics/arkcase:latest" \
+    --label="org.nethserver.images=docker.io/mariadb:${MARIADB_VERSION} docker.io/geniusdynamics/arkcase:${ARKCASE_VERSION}" \
     "${container}"
 # Commit the image
 buildah commit "${container}" "${repobase}/${reponame}"

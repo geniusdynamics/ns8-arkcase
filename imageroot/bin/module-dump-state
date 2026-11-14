@@ -7,15 +7,15 @@
 
 set -e
 
-if ! systemctl --user -q is-active arkcase.service; then
+if ! systemctl --user -q is-active mariadb-app.service; then
     exit 0
 fi
 
-podman exec mariadb-app mariadb-dump \
+podman exec mariadb-app sh -c 'exec mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" \
         --databases arkcase \
         --default-character-set=utf8mb4 \
         --skip-dump-date \
         --ignore-table=mysql.event \
         --single-transaction \
         --quick \
-        --add-drop-table  > arkcase.sql
+        --add-drop-table' > arkcase.sql
